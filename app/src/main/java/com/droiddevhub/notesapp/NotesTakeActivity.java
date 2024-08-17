@@ -1,104 +1,84 @@
 package com.droiddevhub.notesapp;
 
-import androidx.annotation.Nullable;
-import androidx.appcompat.app.AppCompatActivity;
-
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.os.Bundle;
 import android.speech.RecognizerIntent;
+import android.text.TextUtils;
 import android.view.View;
-import android.widget.EditText;
-import android.widget.ImageView;
 import android.widget.Toast;
 
-import com.droiddevhub.notesapp.Model.Notes;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AppCompatActivity;
 
-import java.text.SimpleDateFormat;
+import com.droiddevhub.notesapp.Model.Notes;
+import com.droiddevhub.notesapp.databinding.ActivityNotesTakeBinding;
+
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.Locale;
 
 public class NotesTakeActivity extends AppCompatActivity {
 
     private static final int REQUEST_CODE_SPEECH_INPUT = 1000;
-
-    EditText titleED, notesEd;
-    ImageView saveBtn, micButton;
-    Notes notes;
-
-    boolean isOldNotes = false;
+    private ActivityNotesTakeBinding binding;
+    private Notes oldNotes;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        getWindow().setStatusBarColor(getResources().getColor(R.color.black));
-        setContentView(R.layout.activity_notes_take);
+        binding = ActivityNotesTakeBinding.inflate(getLayoutInflater());
+        setContentView(binding.getRoot());
 
-        saveBtn = findViewById(R.id.savebtn);
-        titleED = findViewById(R.id.titleEdt);
-        notesEd = findViewById(R.id.noteEdt);
-        micButton = findViewById(R.id.micButton);  // Thêm nút microphone
-
-        notes = new Notes();
-        try {
-            notes = (Notes) getIntent().getSerializableExtra("old_notes");
-            titleED.setText(notes.getTitle());
-            notesEd.setText(notes.getNotes());
-            isOldNotes = true;
-        } catch (Exception e) {
-            e.printStackTrace();
+        if (getIntent().hasExtra("old_notes")) {
+            oldNotes = (Notes) getIntent().getSerializableExtra("old_notes");
+            populateFields();
+        } else {
+            oldNotes = new Notes();
         }
 
-        saveBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                String title = titleED.getText().toString();
-                String description = notesEd.getText().toString();
+        binding.savebtn.setOnClickListener(v -> saveNote());
+        binding.micbtn.setOnClickListener(v -> startSpeechToText());
+    }
 
-                if (description.isEmpty()) {
-                    Toast.makeText(NotesTakeActivity.this, "Please enter the description", Toast.LENGTH_SHORT).show();
-                    return;
-                }
+    private void populateFields() {
+        binding.titleEdt.setText(oldNotes.getTitle());
+        binding.noteEdt.setText(oldNotes.getNotes());
+    }
 
-                SimpleDateFormat format = new SimpleDateFormat("EEE, d MMM yyyy HH:mm a");
-                Date date = new Date();
-                if (!isOldNotes) {
-                    notes = new Notes();
-                }
+    private void saveNote() {
+        String title = binding.titleEdt.getText().toString().trim();
+        String notes = binding.noteEdt.getText().toString().trim();
 
-                notes.setTitle(title);
-                notes.setNotes(description);
-                notes.setDate(format.format(date));
-
-                Intent intent = new Intent();
-                intent.putExtra("note", notes);
-                setResult(Activity.RESULT_OK, intent);
-
-                finish();
+        if (TextUtils.isEmpty(title) || TextUtils.isEmpty(notes)) {
+            if (TextUtils.isEmpty(title)) {
+                binding.titleEdt.setError("Title is required");
             }
-        });
-
-        // Xử lý sự kiện khi nhấn vào micButton
-        micButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                startSpeechToText();
+            if (TextUtils.isEmpty(notes)) {
+                binding.noteEdt.setError("Notes are required");
             }
-        });
+            return;
+        }
+
+        oldNotes.setTitle(title);
+        oldNotes.setNotes(notes);
+
+        Intent resultIntent = new Intent();
+        resultIntent.putExtra("note", oldNotes);
+        setResult(Activity.RESULT_OK, resultIntent);
+        finish();
     }
 
     private void startSpeechToText() {
         Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
         intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
         intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault());
-        intent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Nói gì đó...");
+        intent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Speak now...");
 
         try {
             startActivityForResult(intent, REQUEST_CODE_SPEECH_INPUT);
         } catch (ActivityNotFoundException a) {
-            Toast.makeText(this, "Thiết bị của bạn không hỗ trợ chuyển giọng nói thành văn bản", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Speech recognition is not supported on this device", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -108,8 +88,12 @@ public class NotesTakeActivity extends AppCompatActivity {
 
         if (requestCode == REQUEST_CODE_SPEECH_INPUT && resultCode == RESULT_OK && data != null) {
             ArrayList<String> result = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
-            String spokenText = result.get(0);
-            notesEd.setText(spokenText);  // Chèn văn bản vào EditText
+            if (result != null && !result.isEmpty()) {
+                String spokenText = result.get(0);
+                String currentText = binding.noteEdt.getText().toString();
+                // Nối văn bản mới vào cuối văn bản hiện tại
+                binding.noteEdt.setText(currentText + " " + spokenText);
+            }
         }
     }
 }
