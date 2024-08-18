@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="10dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Add Photo"
+        android:textSize="25dp"
+        android:textStyle="bold"
+        android:gravity="center">
+
+    </TextView>
+
+
+    <LinearLayout
+        android:id="@+id/layout_camera"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="10dp">
+
+        <ImageView
+            android:id="@+id/imvCamera"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:src="@drawable/camera"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:text="Camera"
+            android:textSize="20dp"
+            android:gravity="center_vertical"
+            android:layout_marginStart="15dp"/>
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/layout_gallery"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="10dp">
+
+        <ImageView
+            android:id="@+id/imvGallery"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:src="@drawable/gallery"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:text="Gallery"
+            android:textSize="20dp"
+            android:gravity="center_vertical"
+            android:layout_marginStart="15dp"/>
+
+    </LinearLayout>
+
+    <Button
+        android:id="@+id/btnCancleAddPhoto"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Cancle"
+        android:textColor="@color/black"
+        android:textSize="20dp"
+        android:backgroundTint="#E6DEDE"
+        android:layout_marginTop="10dp"/>
+
+
+
+
+
+
+</LinearLayout>

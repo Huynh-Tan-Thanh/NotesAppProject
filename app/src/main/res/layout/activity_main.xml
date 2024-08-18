@@ -6,23 +6,35 @@
     android:layout_height="match_parent"
     android:background="@color/white"
     tools:context=".MainActivity">
+
     <LinearLayout
-       android:id="@+id/navLL"
+        android:id="@+id/navLL"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal">
+
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginHorizontal="30dp"
+            android:layout_marginTop="12dp"
+            android:fontFamily="sans-serif-black"
             android:text="Note App"
             android:textColor="@color/green"
             android:textSize="30sp"
-            android:fontFamily="sans-serif-black"
-            android:layout_marginHorizontal="30dp"
-            android:layout_marginTop="12dp"
-            />
+            android:layout_weight="1"/>
+
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:src="@drawable/setting"
+            android:layout_marginRight="20dp"
+            android:layout_marginTop="5dp"/>
+
 
     </LinearLayout>
+
     <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

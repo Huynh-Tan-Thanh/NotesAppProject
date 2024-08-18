@@ -6,7 +6,8 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:background="@color/white"
-    tools:context=".NotesTakeActivity">
+    tools:context=".NotesTakeActivity"
+    android:padding="10dp">
 
     <RelativeLayout
         android:id="@+id/navLL"
@@ -14,17 +15,12 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Note App"
-            android:textColor="@color/green"
-            android:textSize="30sp"
-            android:fontFamily="sans-serif-black"
-            android:layout_marginHorizontal="30dp"
-            android:layout_alignParentStart="true"
-            android:layout_centerVertical="true"
-            android:layout_marginTop="12dp"/>
+        <ImageView
+            android:id="@+id/backbtn"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@drawable/ic_back"
+            android:padding="5dp"/>
 
         <ImageView
             android:id="@+id/savebtn"
@@ -33,49 +29,74 @@
             android:src="@drawable/turned_in"
             android:layout_alignParentEnd="true"
             android:layout_centerVertical="true"
-            android:layout_marginHorizontal="20dp"/>
+            android:padding="5dp"/>
     </RelativeLayout>
 
     <EditText
         android:id="@+id/titleEdt"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textColor="@color/white"
+        android:textColor="@color/black"
         android:hint="Title"
         android:textColorHint="#BFBABA"
         android:textSize="24sp"
-        android:layout_marginHorizontal="20dp"
-        android:layout_marginTop="30dp"
-        android:singleLine="true"/>
+        android:singleLine="true"
+        android:padding="15dp"/>
 
     <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="0dp"
+        android:layout_weight="1"
         android:layout_marginTop="20dp"
         android:layout_marginHorizontal="20dp">
 
         <EditText
             android:id="@+id/noteEdt"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:textColor="@color/white"
-            android:hint="Add Notes"
-            android:textColorHint="#BFBABA"
-            android:textSize="20sp"
-            android:layout_alignParentStart="true"
-            android:layout_alignParentTop="true"
-            android:layout_toStartOf="@+id/micbtn"
-            android:layout_marginEnd="10dp"/>
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:gravity="top|start"
+            android:hint="Write your note here"
+            android:inputType="textMultiLine"
+            android:minHeight="48dp"
+            android:padding="10dp"
+            android:scrollbars="vertical"
+            android:textSize="16sp"
+
+            />
+    </RelativeLayout>
+
+    <LinearLayout
+        android:id="@+id/bottomButtonLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_marginBottom="20dp">
 
         <ImageView
-            android:id="@+id/micbtn"
+            android:id="@+id/btnAddPhoto"
             android:layout_width="40dp"
             android:layout_height="40dp"
-            android:layout_alignParentEnd="true"
-            android:layout_centerVertical="true"
+            android:src="@drawable/add_photo"
+            android:layout_marginHorizontal="10dp"
+            android:contentDescription="Camera Button"/>
+
+        <ImageView
+            android:id="@+id/btnMic"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
             android:src="@drawable/ic_mic"
+            android:layout_marginHorizontal="10dp"
             android:contentDescription="Mic Button"/>
 
-    </RelativeLayout>
+        <ImageView
+            android:id="@+id/btnRemider"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@drawable/remider"
+            android:layout_marginHorizontal="10dp"
+            android:contentDescription="Gallery Button"/>
+    </LinearLayout>
 
 </LinearLayout>

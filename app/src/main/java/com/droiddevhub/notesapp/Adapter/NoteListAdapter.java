@@ -39,34 +39,34 @@ public class NoteListAdapter extends RecyclerView.Adapter<NotesViewHolder> {
 
     @Override
     public void onBindViewHolder(@NonNull NotesViewHolder holder, int position) {
-     holder.titleTxt.setText(notesList.get(position).getTitle());
-     holder.notesTxt.setText(notesList.get(position).getNotes());
-     holder.dateTxt.setText(notesList.get(position).getDate());
-     holder.dateTxt.setSelected(true);
+        holder.titleTxt.setText(notesList.get(position).getTitle());
+        holder.notesTxt.setText(notesList.get(position).getNotes());
+        holder.dateTxt.setText(notesList.get(position).getDate());
+        holder.dateTxt.setSelected(true);
 
-     if (notesList.get(position).getPinned() == true){
-         holder.imageView.setImageResource(R.drawable.pin);
-     }else {
-         holder.imageView.setImageResource(0);
-      }
+        if (notesList.get(position).getPinned() == true){
+            holder.imageView.setImageResource(R.drawable.pinned);
+        }else {
+            holder.imageView.setImageResource(0);
+       }
 
-     int color_code = getRandomColor();
-     holder.cardView.setCardBackgroundColor(holder.itemView.getResources().getColor(color_code));
+        int color_code = getRandomColor();
+        holder.cardView.setCardBackgroundColor(holder.itemView.getResources().getColor(color_code));
 
-     holder.cardView.setOnClickListener(new View.OnClickListener() {
-         @Override
-         public void onClick(View view) {
-           listener.onClick(notesList.get(holder.getAdapterPosition()));
-         }
-     });
+        holder.cardView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                listener.onClick(notesList.get(holder.getAdapterPosition()));
+            }
+        });
 
-     holder.cardView.setOnLongClickListener(new View.OnLongClickListener() {
-         @Override
-         public boolean onLongClick(View view) {
-             listener.onLongPress(notesList.get(holder.getAdapterPosition()),holder.cardView);
-             return true;
-         }
-     });
+        holder.cardView.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View view) {
+                listener.onLongPress(notesList.get(holder.getAdapterPosition()),holder.cardView);
+                return true;
+            }
+        });
     }
 
     private int getRandomColor(){

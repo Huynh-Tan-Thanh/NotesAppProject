@@ -34,8 +34,7 @@
                 android:layout_height="24dp"
                 android:layout_alignParentEnd="true"
                 android:layout_marginEnd="20dp"
-
-               />
+                android:src="@drawable/pinned"/>
         </RelativeLayout>
         <TextView
             android:id="@+id/notesTxt"
