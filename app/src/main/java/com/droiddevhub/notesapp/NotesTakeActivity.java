@@ -103,8 +103,8 @@ public class NotesTakeActivity extends AppCompatActivity {
                     notes = new Notes();
                 }
 
-                notes.setTitle(title);
-                notes.setNotes(description);
+                //notes.setTitle(title);
+                //notes.setNotes(description);
                 notes.setDate(format.format(date));
 
                 Intent intent = new Intent();
@@ -137,7 +137,9 @@ public class NotesTakeActivity extends AppCompatActivity {
                 gallery.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
-                        Toast.makeText(NotesTakeActivity.this, "Open Photo Gallery", Toast.LENGTH_LONG).show();
+                        // mở gallery
+                        Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+                        dialog.dismiss();
                     }
                 });
 
