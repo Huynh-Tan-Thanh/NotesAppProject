@@ -1,17 +1,30 @@
 package com.droiddevhub.notesapp;
 
-import androidx.annotation.Nullable;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
+import android.Manifest;
 import android.app.Activity;
+import android.app.AlarmManager;
 import android.app.DatePickerDialog;
 import android.app.Dialog;
+import android.app.PendingIntent;
 import android.app.TimePickerDialog;
 import android.content.ActivityNotFoundException;
+import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.speech.RecognizerIntent;
+import android.text.SpannableString;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
+import android.text.style.ImageSpan;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -26,18 +39,17 @@ import com.droiddevhub.notesapp.Model.Notes;
 import com.droiddevhub.notesapp.databinding.ActivityNotesTakeBinding;
 
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 
-import android.app.AlarmManager;
-import android.app.PendingIntent;
-import android.content.Context;
-
 public class NotesTakeActivity extends AppCompatActivity {
 
     private static final int REQUEST_CODE_SPEECH_INPUT = 1000;
+    private static final int REQUEST_IMAGE_CAPTURE = 1;
+    private static final int REQUEST_IMAGE_PICK = 2;
+    private static final int PERMISSION_REQUEST_CODE = 200;
+
     private ActivityNotesTakeBinding binding;
     Notes notes;
     boolean isOldNotes = false;
@@ -136,6 +148,11 @@ public class NotesTakeActivity extends AppCompatActivity {
     }
 
     private void showPhotoDialog() {
+        if (!checkPermission()) {
+            requestPermission();
+            return;
+        }
+
         Dialog dialog = new Dialog(NotesTakeActivity.this);
         dialog.setContentView(R.layout.custom_add_photo_dialog);
 
@@ -143,8 +160,10 @@ public class NotesTakeActivity extends AppCompatActivity {
         camera.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-                startActivity(intent);
+                Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+                if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
+                    startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE);
+                }
                 dialog.dismiss();
             }
         });
@@ -153,8 +172,8 @@ public class NotesTakeActivity extends AppCompatActivity {
         gallery.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-                startActivity(intent);
+                Intent pickPhotoIntent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+                startActivityForResult(pickPhotoIntent, REQUEST_IMAGE_PICK);
                 dialog.dismiss();
             }
         });
@@ -177,29 +196,29 @@ public class NotesTakeActivity extends AppCompatActivity {
 
         DatePickerDialog datePickerDialog = new DatePickerDialog(
                 NotesTakeActivity.this, new DatePickerDialog.OnDateSetListener() {
+            @Override
+            public void onDateSet(DatePicker view, int year, int month, int dayOfMonth) {
+                calendar.set(Calendar.YEAR, year);
+                calendar.set(Calendar.MONTH, month);
+                calendar.set(Calendar.DAY_OF_MONTH, dayOfMonth);
+
+                TimePickerDialog timePickerDialog = new TimePickerDialog(
+                        NotesTakeActivity.this, new TimePickerDialog.OnTimeSetListener() {
                     @Override
-                    public void onDateSet(DatePicker view, int year, int month, int dayOfMonth) {
-                        calendar.set(Calendar.YEAR, year);
-                        calendar.set(Calendar.MONTH, month);
-                        calendar.set(Calendar.DAY_OF_MONTH, dayOfMonth);
+                    public void onTimeSet(TimePicker view, int hourOfDay, int minute) {
+                        calendar.set(Calendar.HOUR_OF_DAY, hourOfDay);
+                        calendar.set(Calendar.MINUTE, minute);
 
-                        TimePickerDialog timePickerDialog = new TimePickerDialog(
-                                NotesTakeActivity.this, new TimePickerDialog.OnTimeSetListener() {
-                                    @Override
-                                    public void onTimeSet(TimePicker view, int hourOfDay, int minute) {
-                                        calendar.set(Calendar.HOUR_OF_DAY, hourOfDay);
-                                        calendar.set(Calendar.MINUTE, minute);
-
-                                        setReminder(calendar);
-                                    }
-                                },
-                                calendar.get(Calendar.HOUR_OF_DAY),
-                                calendar.get(Calendar.MINUTE),
-                                true
-                        );
-                        timePickerDialog.show();
+                        setReminder(calendar);
                     }
                 },
+                        calendar.get(Calendar.HOUR_OF_DAY),
+                        calendar.get(Calendar.MINUTE),
+                        true
+                );
+                timePickerDialog.show();
+            }
+        },
                 calendar.get(Calendar.YEAR),
                 calendar.get(Calendar.MONTH),
                 calendar.get(Calendar.DAY_OF_MONTH)
@@ -212,23 +231,83 @@ public class NotesTakeActivity extends AppCompatActivity {
         Intent intent = new Intent(this, AlarmReceiver.class);
         PendingIntent pendingIntent = PendingIntent.getBroadcast(this, 0, intent, PendingIntent.FLAG_IMMUTABLE);
 
-        // Set the alarm to trigger at the chosen time
         alarmManager.setExact(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), pendingIntent);
 
         Toast.makeText(this, "Reminder set!", Toast.LENGTH_SHORT).show();
     }
 
     @Override
-    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        if (resultCode == RESULT_OK) {
+            if (requestCode == REQUEST_IMAGE_CAPTURE) {
+                Bundle extras = data.getExtras();
+                Bitmap imageBitmap = (Bitmap) extras.get("data");
+                insertImageIntoNote(imageBitmap);
+            } else if (requestCode == REQUEST_IMAGE_PICK) {
+                Uri selectedImage = data.getData();
+                try {
+                    Bitmap bitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(), selectedImage);
+                    insertImageIntoNote(bitmap);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
 
-        if (requestCode == REQUEST_CODE_SPEECH_INPUT && resultCode == RESULT_OK && data != null) {
-            ArrayList<String> result = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
-            String spokenText = result.get(0);
+    private void insertImageIntoNote(Bitmap bitmap) {
+        int maxWidth = binding.noteEdt.getWidth() - binding.noteEdt.getPaddingLeft() - binding.noteEdt.getPaddingRight();
+        int maxHeight = maxWidth * bitmap.getHeight() / bitmap.getWidth();
 
-            String currentText = binding.noteEdt.getText().toString();
-            String updatedText = currentText + " " + spokenText;
-            binding.noteEdt.setText(updatedText);
+        Bitmap scaledBitmap = Bitmap.createScaledBitmap(bitmap, maxWidth, maxHeight, true);
+
+        int cursorPosition = binding.noteEdt.getSelectionStart();
+        String noteContent = binding.noteEdt.getText().toString();
+        String beforeCursor = noteContent.substring(0, cursorPosition);
+        String afterCursor = noteContent.substring(cursorPosition);
+
+        SpannableStringBuilder builder = new SpannableStringBuilder();
+        builder.append(beforeCursor);
+        builder.append("\n");
+
+        SpannableString spannableString = new SpannableString(" ");
+        ImageSpan imageSpan = new ImageSpan(this, scaledBitmap);
+        spannableString.setSpan(imageSpan, 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        builder.append(spannableString);
+
+        builder.append("\n");
+        builder.append(afterCursor);
+
+        binding.noteEdt.setText(builder);
+        binding.noteEdt.setSelection(cursorPosition + 2);
+    }
+
+    private boolean checkPermission() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED
+                || ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            return false;
+        }
+        return true;
+    }
+
+    private void requestPermission() {
+        ActivityCompat.requestPermissions(this,
+                new String[]{Manifest.permission.CAMERA, Manifest.permission.READ_EXTERNAL_STORAGE},
+                PERMISSION_REQUEST_CODE);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == PERMISSION_REQUEST_CODE) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED
+                    && grantResults[1] == PackageManager.PERMISSION_GRANTED) {
+                Toast.makeText(this, "Permissions granted", Toast.LENGTH_SHORT).show();
+                showPhotoDialog();
+            } else {
+                Toast.makeText(this, "Permissions denied", Toast.LENGTH_SHORT).show();
+            }
         }
     }
 }
