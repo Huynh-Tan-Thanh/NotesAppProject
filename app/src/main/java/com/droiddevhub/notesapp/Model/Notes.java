@@ -20,6 +20,8 @@ public class Notes implements Serializable {
     String date = "";
     @ColumnInfo(name = "pinned")
     Boolean pinned = false;
+    private String imageUri;
+
 
     public int getID() {
         return ID;
@@ -59,5 +61,13 @@ public class Notes implements Serializable {
 
     public void setPinned(Boolean pinned) {
         this.pinned = pinned;
+    }
+
+    public String getImageUri() {
+        return imageUri;
+    }
+
+    public void setImageUri(String imageUri) {
+        this.imageUri = imageUri;
     }
 }
