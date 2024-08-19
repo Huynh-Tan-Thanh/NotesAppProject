@@ -21,6 +21,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.speech.RecognizerIntent;
+import android.text.Editable;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
@@ -31,6 +32,7 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.DatePicker;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.TimePicker;
 import android.widget.Toast;
 
@@ -39,6 +41,7 @@ import com.droiddevhub.notesapp.Model.Notes;
 import com.droiddevhub.notesapp.databinding.ActivityNotesTakeBinding;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
@@ -240,7 +243,13 @@ public class NotesTakeActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (resultCode == RESULT_OK) {
-            if (requestCode == REQUEST_IMAGE_CAPTURE) {
+            if (requestCode == REQUEST_CODE_SPEECH_INPUT) {
+                ArrayList<String> result = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+                if (result != null && !result.isEmpty()) {
+                    String spokenText = result.get(0);
+                    insertTextIntoNote(spokenText);
+                }
+            } else if (requestCode == REQUEST_IMAGE_CAPTURE) {
                 Bundle extras = data.getExtras();
                 Bitmap imageBitmap = (Bitmap) extras.get("data");
                 insertImageIntoNote(imageBitmap);
@@ -263,24 +272,39 @@ public class NotesTakeActivity extends AppCompatActivity {
         Bitmap scaledBitmap = Bitmap.createScaledBitmap(bitmap, maxWidth, maxHeight, true);
 
         int cursorPosition = binding.noteEdt.getSelectionStart();
-        String noteContent = binding.noteEdt.getText().toString();
-        String beforeCursor = noteContent.substring(0, cursorPosition);
-        String afterCursor = noteContent.substring(cursorPosition);
+        Editable editable = binding.noteEdt.getEditableText();
 
-        SpannableStringBuilder builder = new SpannableStringBuilder();
-        builder.append(beforeCursor);
-        builder.append("\n");
-
-        SpannableString spannableString = new SpannableString(" ");
-        ImageSpan imageSpan = new ImageSpan(this, scaledBitmap);
+        // Tạo một SpannableString mới với một ký tự đặc biệt
+        SpannableString spannableString = new SpannableString("\u200B");
+        ImageSpan imageSpan = new ImageSpan(this, scaledBitmap, ImageSpan.ALIGN_BASELINE);
         spannableString.setSpan(imageSpan, 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-        builder.append(spannableString);
 
-        builder.append("\n");
-        builder.append(afterCursor);
+        // Chèn SpannableString vào vị trí con trỏ
+        editable.insert(cursorPosition, spannableString);
+        editable.insert(cursorPosition + 1, "\n");
 
-        binding.noteEdt.setText(builder);
         binding.noteEdt.setSelection(cursorPosition + 2);
+    }
+
+    private void insertTextIntoNote(String text) {
+        int cursorPosition = binding.noteEdt.getSelectionStart();
+        Editable editable = binding.noteEdt.getEditableText();
+
+        // Chèn văn bản mới vào vị trí con trỏ
+        editable.insert(cursorPosition, text + " ");
+
+        // Cập nhật vị trí con trỏ
+        binding.noteEdt.setSelection(cursorPosition + text.length() + 1);
+
+        // Buộc EditText cập nhật giao diện
+        binding.noteEdt.post(new Runnable() {
+            @Override
+            public void run() {
+                binding.noteEdt.invalidate();
+            }
+        });
+
+        Toast.makeText(this, "Text inserted: " + text, Toast.LENGTH_SHORT).show();
     }
 
     private boolean checkPermission() {
