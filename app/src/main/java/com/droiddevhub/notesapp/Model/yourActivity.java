@@ -8,28 +8,17 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 public class yourActivity extends AppCompatActivity {
-    private static final int PERMISSION_REQUEST_CODE = 1;
+    private static final int PERMISSION_REQUEST_CODE = 1234; // Mã yêu cầu quyền trùng khớp với PermissionHelper
 
     @Override
-    protected void onCreate(Bundle savedInstanceState){
+    protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        PermissionHelper.checkAndRequestNotificationPermission(this);
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == PERMISSION_REQUEST_CODE) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                // Permission granted, you can trigger the notification now
-                NotificationHelper.triggerNotification(this, "Note Title", "Note Content");
-            } else {
-                // Permission denied
-                Toast.makeText(this, "Notification permission is required to show reminders", Toast.LENGTH_SHORT).show();
-            }
-        }
+        PermissionHelper.onRequestPermissionsResult(requestCode, permissions, grantResults, this);
     }
-
-
-
 }

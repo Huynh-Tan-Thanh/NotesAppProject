@@ -21,6 +21,7 @@ import android.widget.LinearLayout;
 import android.widget.TimePicker;
 import android.widget.Toast;
 
+import com.droiddevhub.notesapp.Interface.DateTimePickerCallback;
 import com.droiddevhub.notesapp.Model.AlarmReceiver;
 import com.droiddevhub.notesapp.Model.Notes;
 import com.droiddevhub.notesapp.databinding.ActivityNotesTakeBinding;
@@ -90,9 +91,17 @@ public class NotesTakeActivity extends AppCompatActivity {
         binding.btnRemider.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                showDateTimePickerDialog();
+                showDateTimePickerDialog(new DateTimePickerCallback() {
+                    @Override
+                    public void onDateTimeSelected(Calendar calendar) {
+                        // Lưu ghi chú và thiết lập nhắc nhở
+                        saveNote();
+                        setReminder(calendar);
+                    }
+                });
             }
         });
+
     }
 
     private void saveNote() {
@@ -172,11 +181,12 @@ public class NotesTakeActivity extends AppCompatActivity {
         dialog.show();
     }
 
-    private void showDateTimePickerDialog() {
+    private void showDateTimePickerDialog(final DateTimePickerCallback callback) {
         final Calendar calendar = Calendar.getInstance();
 
         DatePickerDialog datePickerDialog = new DatePickerDialog(
-                NotesTakeActivity.this, new DatePickerDialog.OnDateSetListener() {
+                NotesTakeActivity.this,
+                new DatePickerDialog.OnDateSetListener() {
                     @Override
                     public void onDateSet(DatePicker view, int year, int month, int dayOfMonth) {
                         calendar.set(Calendar.YEAR, year);
@@ -184,13 +194,17 @@ public class NotesTakeActivity extends AppCompatActivity {
                         calendar.set(Calendar.DAY_OF_MONTH, dayOfMonth);
 
                         TimePickerDialog timePickerDialog = new TimePickerDialog(
-                                NotesTakeActivity.this, new TimePickerDialog.OnTimeSetListener() {
+                                NotesTakeActivity.this,
+                                new TimePickerDialog.OnTimeSetListener() {
                                     @Override
                                     public void onTimeSet(TimePicker view, int hourOfDay, int minute) {
                                         calendar.set(Calendar.HOUR_OF_DAY, hourOfDay);
                                         calendar.set(Calendar.MINUTE, minute);
 
-                                        setReminder(calendar);
+                                        // Gọi callback với đối tượng Calendar
+                                        if (callback != null) {
+                                            callback.onDateTimeSelected(calendar);
+                                        }
                                     }
                                 },
                                 calendar.get(Calendar.HOUR_OF_DAY),
@@ -206,6 +220,7 @@ public class NotesTakeActivity extends AppCompatActivity {
         );
         datePickerDialog.show();
     }
+
 
     private void setReminder(Calendar calendar) {
         AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);

@@ -1,4 +1,5 @@
 package com.droiddevhub.notesapp.Model;
+import android.util.Log;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
@@ -87,5 +88,6 @@ public class NotificationHelper {
         // Get the NotificationManager and notify
         NotificationManagerCompat notificationManager = NotificationManagerCompat.from(context);
         notificationManager.notify(NOTIFICATION_ID, builder.build());
+        Log.d("NotificationHelper", "Notification triggered.");
     }
 }

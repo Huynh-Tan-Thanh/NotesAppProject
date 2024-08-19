@@ -28,7 +28,8 @@
             android:exported="false" />
         <activity
             android:name=".NotesTakeActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:launchMode="singleTask" />
         <activity
             android:name=".MainActivity"
             android:exported="true">

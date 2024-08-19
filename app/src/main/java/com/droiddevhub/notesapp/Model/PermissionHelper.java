@@ -3,17 +3,16 @@ package com.droiddevhub.notesapp.Model;
 import android.Manifest;
 import android.app.Activity;
 import android.content.Context;
-import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
-import android.provider.Settings;
 import android.widget.Toast;
+
+import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 public class PermissionHelper {
-
-    private static final int PERMISSION_REQUEST_CODE = 1234; // Một mã yêu cầu quyền duy nhất
+    private static final int PERMISSION_REQUEST_CODE = 1234; // Đảm bảo mã yêu cầu quyền trùng khớp
 
     // Kiểm tra và yêu cầu quyền thông báo
     public static void checkAndRequestNotificationPermission(Context context) {
@@ -26,7 +25,7 @@ public class PermissionHelper {
     }
 
     // Xử lý kết quả yêu cầu quyền
-    public static void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults, Context context) {
+    public static void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults, Context context) {
         if (requestCode == PERMISSION_REQUEST_CODE) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 // Quyền đã được cấp
@@ -38,4 +37,3 @@ public class PermissionHelper {
         }
     }
 }
-
