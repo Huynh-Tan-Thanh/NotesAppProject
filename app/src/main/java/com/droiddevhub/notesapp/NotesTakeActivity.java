@@ -1,17 +1,29 @@
 package com.droiddevhub.notesapp;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.app.Activity;
+import android.app.AlarmManager;
 import android.app.DatePickerDialog;
 import android.app.Dialog;
+import android.app.PendingIntent;
 import android.app.TimePickerDialog;
 import android.content.ActivityNotFoundException;
+import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.speech.RecognizerIntent;
+import android.text.Spannable;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
+import android.text.style.ImageSpan;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -20,20 +32,18 @@ import android.widget.DatePicker;
 import android.widget.LinearLayout;
 import android.widget.TimePicker;
 import android.widget.Toast;
+import android.widget.EditText;
 
 import com.droiddevhub.notesapp.Model.AlarmReceiver;
 import com.droiddevhub.notesapp.Model.Notes;
 import com.droiddevhub.notesapp.databinding.ActivityNotesTakeBinding;
 
+import java.io.ByteArrayOutputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
-
-import android.app.AlarmManager;
-import android.app.PendingIntent;
-import android.content.Context;
 
 public class NotesTakeActivity extends AppCompatActivity {
 
@@ -41,6 +51,9 @@ public class NotesTakeActivity extends AppCompatActivity {
     private ActivityNotesTakeBinding binding;
     Notes notes;
     boolean isOldNotes = false;
+    ActivityResultLauncher<Intent> launcher;
+    boolean openCam;
+    private Uri imageUri;  // Biến này để lưu URI của ảnh
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,44 +68,41 @@ public class NotesTakeActivity extends AppCompatActivity {
             binding.titleEdt.setText(notes.getTitle());
             binding.noteEdt.setText(notes.getNotes());
             isOldNotes = true;
+
+            // Kiểm tra và hiển thị ảnh nếu có URI ảnh trong note cũ
+            if (notes.getImageUri() != null && !notes.getImageUri().isEmpty()) {
+                imageUri = Uri.parse(notes.getImageUri());
+                binding.noteEdt.post(() -> insertImageIntoEditText(binding.noteEdt, imageUri));
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
 
-        binding.savebtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                saveNote();
+        launcher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), results -> {
+            if (results.getResultCode() == RESULT_OK && results.getData() != null) {
+                if (openCam) {
+                    Bitmap bitmap = (Bitmap) results.getData().getExtras().get("data");
+                    assert bitmap != null;
+
+                    // Lưu ảnh dưới dạng URI trong Note
+                    imageUri = getImageUri(bitmap);
+                    insertImageIntoEditText(binding.noteEdt, imageUri);  // Chèn ảnh vào EditText
+                } else {
+                    imageUri = results.getData().getData();
+                    insertImageIntoEditText(binding.noteEdt, imageUri);  // Chèn ảnh từ URI vào EditText
+                }
             }
         });
 
-        binding.backbtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                onBackPressed();
-            }
-        });
+        binding.savebtn.setOnClickListener(view -> saveNote());
 
-        binding.btnMic.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                startSpeechToText();
-            }
-        });
+        binding.backbtn.setOnClickListener(view -> onBackPressed());
 
-        binding.btnAddPhoto.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                showPhotoDialog();
-            }
-        });
+        binding.btnMic.setOnClickListener(v -> startSpeechToText());
 
-        binding.btnRemider.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                showDateTimePickerDialog();
-            }
-        });
+        binding.btnAddPhoto.setOnClickListener(view -> showPhotoDialog());
+
+        binding.btnRemider.setOnClickListener(view -> showDateTimePickerDialog());
     }
 
     private void saveNote() {
@@ -114,6 +124,11 @@ public class NotesTakeActivity extends AppCompatActivity {
         notes.setTitle(title);
         notes.setNotes(description);
         notes.setDate(format.format(date));
+
+        // Lưu URI của ảnh vào Note
+        if (imageUri != null) {
+            notes.setImageUri(imageUri.toString());
+        }
 
         Intent intent = new Intent();
         intent.putExtra("note", notes);
@@ -140,32 +155,23 @@ public class NotesTakeActivity extends AppCompatActivity {
         dialog.setContentView(R.layout.custom_add_photo_dialog);
 
         LinearLayout camera = dialog.findViewById(R.id.layout_camera);
-        camera.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-                startActivity(intent);
-                dialog.dismiss();
-            }
+        camera.setOnClickListener(v -> {
+            openCam = true;
+            Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+            launcher.launch(intent);
+            dialog.dismiss();
         });
 
         LinearLayout gallery = dialog.findViewById(R.id.layout_gallery);
-        gallery.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-                startActivity(intent);
-                dialog.dismiss();
-            }
+        gallery.setOnClickListener(v -> {
+            openCam = false;
+            Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+            launcher.launch(intent);
+            dialog.dismiss();
         });
 
         Button cancelPhoto = dialog.findViewById(R.id.btnCancleAddPhoto);
-        cancelPhoto.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                dialog.dismiss();
-            }
-        });
+        cancelPhoto.setOnClickListener(v -> dialog.dismiss());
 
         dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         dialog.getWindow().setGravity(Gravity.BOTTOM);
@@ -176,30 +182,24 @@ public class NotesTakeActivity extends AppCompatActivity {
         final Calendar calendar = Calendar.getInstance();
 
         DatePickerDialog datePickerDialog = new DatePickerDialog(
-                NotesTakeActivity.this, new DatePickerDialog.OnDateSetListener() {
-                    @Override
-                    public void onDateSet(DatePicker view, int year, int month, int dayOfMonth) {
-                        calendar.set(Calendar.YEAR, year);
-                        calendar.set(Calendar.MONTH, month);
-                        calendar.set(Calendar.DAY_OF_MONTH, dayOfMonth);
+                NotesTakeActivity.this, (view, year, month, dayOfMonth) -> {
+            calendar.set(Calendar.YEAR, year);
+            calendar.set(Calendar.MONTH, month);
+            calendar.set(Calendar.DAY_OF_MONTH, dayOfMonth);
 
-                        TimePickerDialog timePickerDialog = new TimePickerDialog(
-                                NotesTakeActivity.this, new TimePickerDialog.OnTimeSetListener() {
-                                    @Override
-                                    public void onTimeSet(TimePicker view, int hourOfDay, int minute) {
-                                        calendar.set(Calendar.HOUR_OF_DAY, hourOfDay);
-                                        calendar.set(Calendar.MINUTE, minute);
+            TimePickerDialog timePickerDialog = new TimePickerDialog(
+                    NotesTakeActivity.this, (view1, hourOfDay, minute) -> {
+                calendar.set(Calendar.HOUR_OF_DAY, hourOfDay);
+                calendar.set(Calendar.MINUTE, minute);
 
-                                        setReminder(calendar);
-                                    }
-                                },
-                                calendar.get(Calendar.HOUR_OF_DAY),
-                                calendar.get(Calendar.MINUTE),
-                                true
-                        );
-                        timePickerDialog.show();
-                    }
-                },
+                setReminder(calendar);
+            },
+                    calendar.get(Calendar.HOUR_OF_DAY),
+                    calendar.get(Calendar.MINUTE),
+                    true
+            );
+            timePickerDialog.show();
+        },
                 calendar.get(Calendar.YEAR),
                 calendar.get(Calendar.MONTH),
                 calendar.get(Calendar.DAY_OF_MONTH)
@@ -217,6 +217,62 @@ public class NotesTakeActivity extends AppCompatActivity {
 
         Toast.makeText(this, "Reminder set!", Toast.LENGTH_SHORT).show();
     }
+
+    private Uri getImageUri(Bitmap bitmap) {
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, bytes);
+        String path = MediaStore.Images.Media.insertImage(getContentResolver(), bitmap, "Title", null);
+        return Uri.parse(path);
+    }
+
+    private void insertImageIntoEditText(EditText editText, Uri imageUri) {
+        try {
+            Bitmap bitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(), imageUri);
+            insertImageIntoEditText(editText, bitmap);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void insertImageIntoEditText(EditText editText, Bitmap bitmap) {
+        if (bitmap == null) {
+            Log.e("InsertImage", "Bitmap is null");
+            Toast.makeText(this, "Bitmap is null", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        if (editText == null) {
+            Log.e("InsertImage", "EditText is null");
+            Toast.makeText(this, "EditText is null", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Tạo đối tượng ImageSpan với hình ảnh bitmap
+        ImageSpan imageSpan = new ImageSpan(this, bitmap);
+
+        // Tạo một đối tượng Spannable để chứa văn bản và hình ảnh
+        Spannable spannable = editText.getText();
+
+        // Xác định vị trí chèn hình ảnh
+        int start = editText.getSelectionStart();
+        int end = editText.getSelectionEnd();
+
+        // Kiểm tra vị trí hợp lệ
+        if (start < 0 || end < 0 || start > end) {
+            Log.e("InsertImage", "Invalid cursor position: start=" + start + ", end=" + end);
+            Toast.makeText(this, "Invalid cursor position", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Chèn hình ảnh vào Spannable tại vị trí hiện tại
+        spannable.setSpan(imageSpan, start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+
+        // Đặt lại văn bản của EditText với các thay đổi
+        editText.setText(spannable);
+    }
+
+
+
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
